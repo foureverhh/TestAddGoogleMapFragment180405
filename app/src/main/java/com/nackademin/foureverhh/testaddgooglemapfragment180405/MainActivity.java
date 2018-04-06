@@ -26,6 +26,8 @@ import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
@@ -40,6 +42,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     LocationRequest mLocationRequest;
     LocationCallback mLocationCallback;
     boolean mRequestingLocationUpdates = true;
+
+    double longitude ;
+    double latitude ;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -76,8 +81,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                             //Got last known location. In some rare situations this can be null
                             if (location != null) {
                                 //logic to handle the location
-                                double longitude = location.getLongitude();
-                                double latitude = location.getLatitude();
+                                 longitude = location.getLongitude();
+                                 latitude = location.getLatitude();
                                 Log.e("Location", "Longitude is : " + String.valueOf(longitude) + "Latitude is : " + String.valueOf(latitude));
                             }
                         }
@@ -94,7 +99,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
                 for(Location location : locationResult.getLocations()){
                     //Update UI with location data
-                    //.....
+                     longitude = location.getLongitude();
+                     latitude = location.getLatitude();
+                    //Convey locations to firebase
                 }
             }
         };
@@ -105,6 +112,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onMapReady(GoogleMap googleMap) {
         newMap = googleMap;
+        newMap.addMarker(new MarkerOptions().position(new LatLng(latitude,longitude)).title("Sample"));
+
     }
 
     //Create a LocationRequest
