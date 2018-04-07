@@ -23,6 +23,7 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResponse;
 import com.google.android.gms.location.SettingsClient;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -43,13 +44,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     LocationCallback mLocationCallback;
     boolean mRequestingLocationUpdates = true;
 
-    double longitude ;
-    double latitude ;
+    double longitude;
+    double latitude;
+    double logi;
+    double lati;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
 
         //Add a google map fragment to main activity
         mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
@@ -65,29 +68,31 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mapFragment.getMapAsync(this);
         */
 
+        if (ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            //ask for permission
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    REQUEST_LOCATION);
+        }
+
         //Location
         mFusedLocationClint = LocationServices.getFusedLocationProviderClient(this);
+        mFusedLocationClint.getLastLocation().addOnSuccessListener(
+                this, new OnSuccessListener<Location>() {
+                    @Override
+                    public void onSuccess(Location location) {
+                        //Got last known location. In some rare situations this can be null
+                        if (location != null) {
+                            //logic to handle the location
+                            longitude = location.getLongitude();
+                            latitude = location.getLatitude();
 
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            //ask for permission
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION);
-        } else {
-
-            mFusedLocationClint.getLastLocation()
-                    .addOnSuccessListener(this, new OnSuccessListener<Location>() {
-                        @Override
-                        public void onSuccess(Location location) {
-                            //Got last known location. In some rare situations this can be null
-                            if (location != null) {
-                                //logic to handle the location
-                                 longitude = location.getLongitude();
-                                 latitude = location.getLatitude();
-                                Log.e("Location", "Longitude is : " + String.valueOf(longitude) + "Latitude is : " + String.valueOf(latitude));
-                            }
-                        }
-                    });
-        }
+                            Log.e("Location", "Longitude is : "
+                                    + String.valueOf(longitude) + "Latitude is : "
+                                    + String.valueOf(latitude));
+                        }}});
 
         createLocationRequest();
 
@@ -97,11 +102,20 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 if(locationResult == null){
                     return;
                 }
+
                 for(Location location : locationResult.getLocations()){
                     //Update UI with location data
-                     longitude = location.getLongitude();
-                     latitude = location.getLatitude();
+                    logi = location.getLongitude();
+                    lati = location.getLatitude();
+
+                    Log.e("Call back Location", "Longitude is : "
+                            + String.valueOf(logi) + "Latitude is : "
+                            + String.valueOf(lati));
                     //Convey locations to firebase
+                    //LatLng a = new LatLng(5.609511, -0.167266);
+                    LatLng a = new LatLng(lati, logi);
+                    newMap.addMarker(new MarkerOptions().position(a).title("Marker in New Place."));
+                    newMap.moveCamera(CameraUpdateFactory.newLatLng(a));
                 }
             }
         };
@@ -112,15 +126,22 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onMapReady(GoogleMap googleMap) {
         newMap = googleMap;
-        newMap.addMarker(new MarkerOptions().position(new LatLng(latitude,longitude)).title("Sample"));
+
+        //Log.e("map sample","Latitude is"+latitude+"longitude is"+longitude);
+        //Log.e("map sample","Lati is"+lati+"logi is"+logi);
+        //newMap.addMarker(new MarkerOptions().position(new LatLng(latitude,longitude)).title("Sample"));
+        //newMap.addMarker(new MarkerOptions().position(new LatLng(lati,logi)).title("Destination"));
+        //LatLng sydney = new LatLng(latitude, longitude);
+        //newMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Last Place."));
+        //googleMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
 
     }
 
     //Create a LocationRequest
     protected void createLocationRequest() {
         mLocationRequest = LocationRequest.create();
-        mLocationRequest.setInterval(10000);
-        mLocationRequest.setFastestInterval(5000);
+        mLocationRequest.setInterval(5000);
+        mLocationRequest.setFastestInterval(2000);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         //To get the current LocationRequest from the device for Google play services
@@ -166,7 +187,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void startLocationUpdates() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+        ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED){
             //To invoke Location updates
             mFusedLocationClint.requestLocationUpdates(mLocationRequest, mLocationCallback, null);
         }
